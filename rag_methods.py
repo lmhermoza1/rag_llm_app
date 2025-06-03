@@ -106,7 +106,7 @@ def initialize_vector_db(docs):
             api_key=os.getenv("AZ_OPENAI_API_KEY"), 
             azure_endpoint=os.getenv("AZ_OPENAI_ENDPOINT"),
             model="text-embedding-3-large",
-            openai_api_version="2024-02-15-preview",
+            openai_api_version="2024-12-01-preview",
         )
 
     vector_db = Chroma.from_documents(

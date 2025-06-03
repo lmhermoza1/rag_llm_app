@@ -1,6 +1,12 @@
+import os
+os.environ["USER_AGENT"] = "rag-llm-app/1.0"  # Set before any other imports
+
+import dotenv
+dotenv.load_dotenv()
+
 import streamlit as st
 import os
-import dotenv
+# import dotenv
 import uuid
 
 # check if it's linux so it works on Streamlit Cloud
@@ -20,7 +26,6 @@ from rag_methods import (
     stream_llm_rag_response,
 )
 
-dotenv.load_dotenv()
 
 if "AZ_OPENAI_API_KEY" not in os.environ:
     MODELS = [
@@ -168,7 +173,7 @@ else:
     elif model_provider == "azure-openai":
         llm_stream = AzureChatOpenAI(
             azure_endpoint=os.getenv("AZ_OPENAI_ENDPOINT"),
-            openai_api_version="2024-02-15-preview",
+            openai_api_version="2024-12-01-preview",
             model_name=st.session_state.model.split("/")[-1],
             openai_api_key=os.getenv("AZ_OPENAI_API_KEY"),
             openai_api_type="azure",
