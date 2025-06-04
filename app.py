@@ -1,10 +1,10 @@
 import os
 os.environ["USER_AGENT"] = "rag-llm-app/1.0"  # Set before any other imports
-
 import dotenv
 dotenv.load_dotenv()
 
 import streamlit as st
+from PIL import Image
 import os
 # import dotenv
 import uuid
@@ -47,7 +47,21 @@ st.set_page_config(
 
 
 # --- Header ---
-st.html("""<h2 style="text-align: center;">📚🔍 <i> Do your LLM even RAG bro? </i> 🤖💬</h2>""")
+# st.html("""<h1 style="text-align: center;">Chat with your Data</h1>""")
+
+image = Image.open('assets/phiai.png')
+#st.image(image, caption='Sunrise')
+
+# Create three columns and place the image in the center one
+col1, col2, col3 = st.columns([1, 1, 1])
+with col1:
+    st.html("""<h1 style="text-align: right;">Chat with</h1>""")    
+with col2:
+    st.html("""<h1 style="text-align: left;">your Data</h1>""")  
+    st.image(image, width=120, caption="")
+    
+# with col3:
+#    st.html("""<h1 style="text-align: left;">your Data</h1>""")  
 
 
 # --- Initial Setup ---
