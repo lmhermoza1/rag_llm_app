@@ -1,12 +1,14 @@
 import os
 os.environ["USER_AGENT"] = "rag-llm-app/1.0"  # Set before any other imports
-import dotenv
-dotenv.load_dotenv()
 
 import streamlit as st
+from streamlit_msal import Msal
+import requests
+import dotenv
+dotenv.load_dotenv()
 from PIL import Image
-import os
-# import dotenv
+from io import BytesIO
+import base64
 import uuid
 
 # check if it's linux so it works on Streamlit Cloud
@@ -26,6 +28,115 @@ from rag_methods import (
     stream_llm_rag_response,
 )
 
+# --- THIS MUST BE THE FIRST STREAMLIT COMMAND ---
+st.set_page_config(
+    page_title="Chat your way", 
+    page_icon="📚", 
+    layout="centered", 
+    initial_sidebar_state="expanded"
+)
+
+# Configuration for MSAL
+#CLIENT_ID = os.getenv("MS_CLIENT_ID")
+#TENANT_ID = os.getenv("MS_TENANT_ID")
+#AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
+#REDIRECT_URI = os.getenv("MS_REDIRECT_URI", "http://localhost:8501")
+
+#client_id = "b328b431-8532-4d1b-9e4c-0280bf0ee08f"
+#tenant_id = "4b8684a0-11a0-4d2c-bddb-b90d7e931c35"
+
+client_id = "b328b431-8532-4d1b-9e4c-0280bf0ee08f"
+tenant_id = "4b8684a0-11a0-4d2c-bddb-b90d7e931c35"
+
+# Define the Images logos path
+path = 'assets/logos/'
+
+# Authenticate user
+auth_data = Msal.initialize(
+    client_id=f"{client_id}",
+    authority=f"https://login.microsoftonline.com/{tenant_id}",
+    scopes=["User.Read"],  # Ask for a basic profile user info claim
+)
+
+# Get user info from Graph API    
+def get_user_info(access_token):
+    """Get user information from Microsoft Graph API."""
+    headers = {'Authorization': f'Bearer {access_token}'}
+    response = requests.get(
+        'https://graph.microsoft.com/v1.0/me?$select=displayName,jobTitle,companyName,mail,userPrincipalName,officeLocation,state,givenName',
+        headers=headers
+    )
+    if response.status_code == 200:
+        return response.json()        
+    return None
+
+def get_user_photo(access_token):
+    """Get user profile photo from Microsoft Graph API."""
+    headers = {'Authorization': f'Bearer {access_token}'}
+    try:
+        response = requests.get(
+            'https://graph.microsoft.com/v1.0/me/photo/$value',
+            headers=headers
+        )
+        if response.status_code == 200:
+            return response.content
+        return None
+    except Exception as e:
+        return None
+    
+    page_title="Chat your way", 
+    Msal.revalidate() # Usefull to refresh "accessToken"
+
+if not auth_data:
+    st.warning("Please sign in to access the app.")
+    if st.button("Sign in"):
+        Msal.sign_in() # Show popup to select account
+    st.stop()
+else:
+    # User is authenticated - show sign out button in sidebar or at bottom
+    access_token = auth_data["accessToken"]
+    user_info = get_user_info(access_token)    
+    user_photo = get_user_photo(access_token)
+
+    #Match company logo
+    logo_url = user_info.get('companyName') + ".PNG" 
+    
+    with st.sidebar:
+        img = Image.open(path + logo_url)
+        st.image(img, caption="", use_container_width=True)
+        # Display user information
+        if user_photo:
+            try:
+                img = Image.open(BytesIO(user_photo))
+                buffered = BytesIO()
+                img.save(buffered, format="PNG")
+                img_b64 = base64.b64encode(buffered.getvalue()).decode()
+                img_html = f"""
+                    <div style="text-align:center;">
+                        <img src="data:image/png;base64,{img_b64}" 
+                            style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:2px solid #ddd;" />
+                        <br> <strong>{user_info.get('displayName', 'N/A')}</strong><br>
+                        {user_info.get('jobTitle', 'N/A')}<br>
+                        {user_info.get('companyName', 'N/A')}
+                    </div>
+                """
+                st.markdown(img_html, unsafe_allow_html=True)
+                                    
+            except Exception as e:
+                    st.write("📷 Photo unavailable")
+        else:
+            st.write("📷 No photo available")
+        st.write("")
+        
+        # Create two columns and place the buttons
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            if st.button("Sign out"):
+                Msal.sign_out() # Triggers sign-out process and reruns the app  
+        with col2:
+            if st.button("Refresh"):
+                Msal.revalidate() # Triggers sign-out process and reruns the app 
+
 
 if "AZ_OPENAI_API_KEY" not in os.environ:
     MODELS = [
@@ -36,15 +147,6 @@ if "AZ_OPENAI_API_KEY" not in os.environ:
     ]
 else:
     MODELS = ["azure-openai/gpt-4o"]
-
-
-st.set_page_config(
-    page_title="RAG LLM app?", 
-    page_icon="📚", 
-    layout="centered", 
-    initial_sidebar_state="expanded"
-)
-
 
 # --- Header ---
 # st.html("""<h1 style="text-align: center;">Chat with your Data</h1>""")
