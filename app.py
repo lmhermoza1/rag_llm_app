@@ -126,6 +126,7 @@ else:
                     st.write("📷 Photo unavailable")
         else:
             st.write("📷 No photo available")
+        
         st.write("")
         
         # Create two columns and place the buttons
