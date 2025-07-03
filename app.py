@@ -103,7 +103,18 @@ else:
     
     with st.sidebar:
         img = Image.open(path + logo_url)
-        st.image(img, caption="", use_container_width=True)
+        # Center the image using HTML/CSS
+        buffered = BytesIO()
+        img.save(buffered, format="PNG")
+        img_b64 = base64.b64encode(buffered.getvalue()).decode()
+        st.markdown(
+            f"""
+            <div style="display: flex; justify-content: center;">
+                <img src="data:image/png;base64,{img_b64}" width="150"/>                
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         # Display user information
         if user_photo:
             try:
@@ -113,6 +124,7 @@ else:
                 img_b64 = base64.b64encode(buffered.getvalue()).decode()
                 img_html = f"""
                     <div style="text-align:center;">
+                        <br>
                         <img src="data:image/png;base64,{img_b64}" 
                             style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:2px solid #ddd;" />
                         <br> <strong>{user_info.get('displayName', 'N/A')}</strong><br>
@@ -162,6 +174,7 @@ with col1:
 with col2:
     st.html("""<h1 style="text-align: left;">your Data Now!</h1>""")  
     st.image(image, width=120, caption="")
+    st.write(os.getenv("USER_AGENT"))
     
 # with col3:
 #    st.html("""<h1 style="text-align: left;">your Data</h1>""")  
